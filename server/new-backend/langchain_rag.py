@@ -1,19 +1,20 @@
 import numpy as np
 from pypdf import PdfReader
 
-try:
-    from langchain_text_splitters import RecursiveCharacterTextSplitter
-except ImportError:  # pragma: no cover - fallback for older langchain versions
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.chat_models import ChatOpenAI
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
+# -----------------------------
+# LangChain 1.0 Compatible Imports
+# -----------------------------
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_core.prompts import ChatPromptTemplate
 
+# -----------------------------
+# PROMPTS
+# -----------------------------
 JD_SUMMARY_PROMPT = """
-Extract the summary from this Job Description text.
+Extract the summary from this job description
 
-Return the result ONLY in this JSON format 
+Return ONLY in JSON format.
 
 Job Description:
 {jd_text}
@@ -27,7 +28,7 @@ Inputs:
 - JD Summary (JSON)
 - Full Job Description (text)
 
-Produce a JSON object only with the following fields:
+Produce ONLY this JSON:
 
 {
   "match_score": "<0-100 integer>",
@@ -36,7 +37,6 @@ Produce a JSON object only with the following fields:
   "summary": "<short 1-2 sentence fit summary>"
 }
 
-Be concise, objective and score from 0 to 100.
 Resume Chunks:
 {resume_chunks}
 
@@ -47,22 +47,28 @@ Full JD:
 {full_jd}
 """
 
+# -----------------------------
+# LLM + Embeddings
+# -----------------------------
 embeddings_client = OpenAIEmbeddings(model="text-embedding-3-small")
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
-jd_summary_prompt = PromptTemplate(
-    input_variables=["jd_text"],
-    template=JD_SUMMARY_PROMPT,
-)
-analysis_prompt = PromptTemplate(
-    input_variables=["resume_chunks", "jd_summary", "full_jd"],
-    template=ANALYSIS_PROMPT,
-)
+# -----------------------------
+# Prompt Templates (1.0)
+# -----------------------------
+jd_summary_prompt = ChatPromptTemplate.from_template(JD_SUMMARY_PROMPT)
+analysis_prompt = ChatPromptTemplate.from_template(ANALYSIS_PROMPT)
 
-jd_summary_chain = LLMChain(llm=llm, prompt=jd_summary_prompt)
-analysis_chain = LLMChain(llm=llm, prompt=analysis_prompt)
+# -----------------------------
+# LCEL Runnables (Prompt → LLM)
+# -----------------------------
+jd_summary_chain = jd_summary_prompt | llm
+analysis_chain = analysis_prompt | llm
 
 
+# -----------------------------
+# PDF LOADER
+# -----------------------------
 def load_pdf_text(path: str) -> str:
     """Return full text from all PDF pages."""
     reader = PdfReader(path)
@@ -72,6 +78,9 @@ def load_pdf_text(path: str) -> str:
     return "\n".join(texts)
 
 
+# -----------------------------
+# TEXT SPLITTER
+# -----------------------------
 def split_text_into_chunks(text: str, chunk_size: int = 800, chunk_overlap: int = 150):
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
@@ -80,6 +89,9 @@ def split_text_into_chunks(text: str, chunk_size: int = 800, chunk_overlap: int 
     return splitter.split_text(text)
 
 
+# -----------------------------
+# EMBEDDINGS HELPERS
+# -----------------------------
 def embed_text_list(texts: list):
     """Return embeddings for each text snippet."""
     return embeddings_client.embed_documents(texts)
@@ -104,17 +116,20 @@ def top_k_similar(query_emb, chunk_embs, k=5):
     return [idx for idx, _ in scores[:k]]
 
 
+# -----------------------------
+# CHAIN FUNCTIONS
+# -----------------------------
 def generate_jd_summary(full_jd: str) -> str:
-    """Run the JD summarization LLM chain."""
-    out = jd_summary_chain.run(jd_text=full_jd)
-    return out.strip()
+    """Run the JD summarization LCEL chain."""
+    result = jd_summary_chain.invoke({"jd_text": full_jd})
+    return result.content.strip()
 
 
 def analyze_resume(resume_chunks_text: str, jd_summary: str, full_jd: str) -> str:
-    """Run the analysis LLM chain over selected resume chunks."""
-    out = analysis_chain.run(
-        resume_chunks=resume_chunks_text,
-        jd_summary=jd_summary,
-        full_jd=full_jd,
-    )
-    return out.strip()
+    """Run the final analysis LCEL chain."""
+    result = analysis_chain.invoke({
+        "resume_chunks": resume_chunks_text,
+        "jd_summary": jd_summary,
+        "full_jd": full_jd
+    })
+    return result.content.strip()

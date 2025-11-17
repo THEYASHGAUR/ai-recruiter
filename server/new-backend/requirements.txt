@@ -1,12 +1,23 @@
+# FastAPI + Server
 fastapi
-uvicorn
-langchain
-langchain-text-splitters
-openai
+uvicorn[standard]
+
+# LangChain 1.0 Core
+langchain==1.0.0
+langchain-core==1.0.0
+langchain-community==1.0.0
+
+# OpenAI API 
+openai>=1.6.0
+langchain-openai==0.1.0
+
+# Text Splitter (required separately in LC 1.0)
+langchain-text-splitters==0.1.0
+
+# PDF Reading
 pypdf
-python-multipart
+
+# Utils
 numpy
-chromadb
-pydantic
-pydantic-settings
+python-multipart
 python-dotenv

@@ -60,3 +60,8 @@ async def analyze(
         "selected_chunks_indices": topk_indices,
         "analysis": analysis
     }
+
+
+@app.get("/")
+def root():
+    return {"message":"fastapi server is running...."}
