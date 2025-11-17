@@ -95,10 +95,54 @@
             </div>
           </div>
         </section>
+
+        <section class="panel" id="results-panel" aria-labelledby="results-title" hidden>
+          <div class="panel__header">
+            <span class="pill">3</span>
+            <h2 id="results-title">Analysis Output</h2>
+          </div>
+
+          <div class="results-grid">
+            <div class="result-stat">
+              <p class="stat-label">Match Score</p>
+              <p class="stat-value" id="result-score">--</p>
+            </div>
+            <div class="result-stat">
+              <p class="stat-label">Relevant Chunks</p>
+              <p class="stat-value" id="result-chunks">--</p>
+            </div>
+          </div>
+
+          <div class="result-block">
+            <h3>Summary</h3>
+            <p id="result-summary">Run an analysis to see insights.</p>
+          </div>
+
+          <div class="result-columns">
+            <div>
+              <h3>Strengths</h3>
+              <ul id="result-strengths"></ul>
+            </div>
+            <div>
+              <h3>Gaps / Missing Skills</h3>
+              <ul id="result-gaps"></ul>
+            </div>
+          </div>
+
+          <div class="result-block">
+            <h3>JD Summary</h3>
+            <p id="result-jd-summary"></p>
+          </div>
+
+          <details class="result-block">
+            <summary>Raw Response</summary>
+            <pre id="result-raw"></pre>
+          </details>
+        </section>
       </main>
 
       <div class="cta-wrapper">
-        <button class="primary" id="analyze-btn">Analyze Resume</button>
+        <button class="primary" id="analyze-btn" type="button">Analyze Resume</button>
       </div>
     </div>
 

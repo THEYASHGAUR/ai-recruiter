@@ -8,6 +8,10 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 
+from dotenv import load_dotenv
+load_dotenv()
+
+
 # -----------------------------
 # PROMPTS
 # -----------------------------
@@ -30,12 +34,12 @@ Inputs:
 
 Produce ONLY this JSON:
 
-{
+{{
   "match_score": "<0-100 integer>",
   "missing_skills": [],
   "strengths": [],
   "summary": "<short 1-2 sentence fit summary>"
-}
+}}
 
 Resume Chunks:
 {resume_chunks}

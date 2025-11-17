@@ -10,6 +10,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const analyzeBtn = document.getElementById("analyze-btn");
   const jdTextarea = document.getElementById("jd-text");
   const jdFileInput = document.getElementById("jd-file");
+  const resultsPanel = document.getElementById("results-panel");
+  const resultScore = document.getElementById("result-score");
+  const resultChunks = document.getElementById("result-chunks");
+  const resultSummary = document.getElementById("result-summary");
+  const resultStrengths = document.getElementById("result-strengths");
+  const resultGaps = document.getElementById("result-gaps");
+  const resultJdSummary = document.getElementById("result-jd-summary");
+  const resultRaw = document.getElementById("result-raw");
 
   const ANALYZE_ENDPOINT = "http://127.0.0.1:8000/analyze";
   const DEFAULT_TOP_K = 5;
@@ -26,6 +34,48 @@ document.addEventListener("DOMContentLoaded", () => {
     panels.forEach((panel) => {
       panel.classList.toggle("hidden", panel.dataset.panel !== target);
     });
+  }
+
+  function renderResults(payload) {
+    if (!payload) return;
+    const analysis = typeof payload.analysis === "string" ? safeJsonParse(payload.analysis) : payload.analysis;
+    const jdSummary = typeof payload.jd_summary === "string" ? payload.jd_summary : JSON.stringify(payload.jd_summary, null, 2);
+
+    resultScore.textContent = analysis?.match_score ?? "--";
+    resultChunks.textContent = payload?.selected_chunks_count ?? "--";
+    resultSummary.textContent = analysis?.summary || "No summary returned.";
+
+    populateList(resultStrengths, analysis?.strengths);
+    populateList(resultGaps, analysis?.missing_skills);
+
+    resultJdSummary.textContent = jdSummary || "";
+    resultRaw.textContent = JSON.stringify(payload, null, 2);
+
+    resultsPanel.hidden = false;
+    resultsPanel.scrollIntoView({ behavior: "smooth" });
+  }
+
+  function populateList(container, items) {
+    container.innerHTML = "";
+    if (!Array.isArray(items) || !items.length) {
+      const li = document.createElement("li");
+      li.textContent = "None";
+      container.appendChild(li);
+      return;
+    }
+    items.forEach((text) => {
+      const li = document.createElement("li");
+      li.textContent = text;
+      container.appendChild(li);
+    });
+  }
+
+  function safeJsonParse(value) {
+    try {
+      return JSON.parse(value);
+    } catch (_) {
+      return null;
+    }
   }
 
   /* ---------------- Resume Upload ---------------- */
@@ -83,7 +133,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ---------------- Analyze CTA ---------------- */
-  analyzeBtn.addEventListener("click", async () => {
+  analyzeBtn.addEventListener("click", async (event) => {
+    event.preventDefault();
     analyzeBtn.classList.add("active");
     setTimeout(() => analyzeBtn.classList.remove("active"), 600);
 
@@ -116,6 +167,12 @@ document.addEventListener("DOMContentLoaded", () => {
     showToast("Analyzing resume...");
 
     try {
+      console.info("Submitting analyze request", {
+        resumeName: resumeFile.name,
+        hasJdFile: Boolean(jdFile),
+        hasJdText: Boolean(jdText),
+        topK: DEFAULT_TOP_K,
+      });
       const response = await fetch(ANALYZE_ENDPOINT, {
         method: "POST",
         body: formData,
@@ -127,9 +184,9 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(message);
       }
 
-      console.log("Analysis response:", payload);
+      console.info("Analyze request succeeded", payload);
       showToast("Analysis complete!", "success");
-      // TODO: render payload.analysis in the UI when design is ready.
+      renderResults(payload);
     } catch (error) {
       console.error("Failed to analyze resume", error);
       showToast(error.message || "Failed to analyze resume.");
