@@ -16,7 +16,9 @@ load_dotenv()
 # PROMPTS
 # -----------------------------
 JD_SUMMARY_PROMPT = """
-Extract the summary from this job description
+Extract the summary from this job description such as 
+company name , job title , location , requirements, education required , experience required , skills required, package offering.
+NOTE: if any of the information in not provided in that jd return as "not mentioned"
 
 Return ONLY in JSON format.
 
@@ -38,7 +40,7 @@ Produce ONLY this JSON:
   "match_score": "<0-100 integer>",
   "missing_skills": [],
   "strengths": [],
-  "summary": "<short 1-2 sentence fit summary>"
+  "Should u apply in this Job?": "<short 1-2 sentence fit response>"
 }}
 
 Resume Chunks:
