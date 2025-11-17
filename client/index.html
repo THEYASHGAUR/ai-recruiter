@@ -66,7 +66,7 @@
 
           <div class="tabs" role="tablist">
             <button class="tab active" data-tab="text" role="tab">Paste Text</button>
-            <button class="tab" data-tab="link" role="tab">Job Link</button>
+            <button class="tab" data-tab="link" role="tab" disabled>Job Link</button>
             <button class="tab" data-tab="file" role="tab">Upload File</button>
           </div>
 
@@ -144,8 +144,9 @@
       <div class="cta-wrapper">
         <button class="primary" id="analyze-btn" type="button">Analyze Resume</button>
       </div>
-    </div>
+      </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

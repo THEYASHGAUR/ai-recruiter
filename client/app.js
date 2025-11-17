@@ -1,3 +1,10 @@
+window.addEventListener("keydown", (e) => {
+  if ((e.key === "Enter" || e.key === "NumpadEnter") && e.target.tagName !== "TEXTAREA") {
+    e.preventDefault();
+  }
+});
+
+
 document.addEventListener("DOMContentLoaded", () => {
   const tabs = document.querySelectorAll(".tab");
   const panels = document.querySelectorAll(".tab-panel");
@@ -134,12 +141,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ---------------- Analyze CTA ---------------- */
   analyzeBtn.addEventListener("click", async (event) => {
+    console.log("hi ")
     event.preventDefault();
     analyzeBtn.classList.add("active");
     setTimeout(() => analyzeBtn.classList.remove("active"), 600);
+    console.log("yash")
 
     const resumeFile = resumeInput.files?.[0];
-    const jdFile = jdFileInput?.files?.[0];
+    // const jdFile = jdFileInput?.files?.[0];
     const jdText = jdTextarea.value.trim();
 
     if (!resumeFile) {
@@ -147,7 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (!jdFile && !jdText) {
+    if (!jdText) {
       showToast("Provide a JD file or paste the JD text to continue.");
       return;
     }
@@ -155,38 +164,37 @@ document.addEventListener("DOMContentLoaded", () => {
     const formData = new FormData();
     formData.append("resume", resumeFile);
     formData.append("top_k", String(DEFAULT_TOP_K));
-    if (jdFile) {
-      formData.append("jd", jdFile);
-    } else {
+    if (jdText) {
       formData.append("jd_text", jdText);
-    }
+    } 
 
+    console.log("inside")
     const originalLabel = analyzeBtn.textContent;
     analyzeBtn.disabled = true;
     analyzeBtn.textContent = "Analyzing...";
     showToast("Analyzing resume...");
 
     try {
+      console.log("inside try")
       console.info("Submitting analyze request", {
         resumeName: resumeFile.name,
-        hasJdFile: Boolean(jdFile),
         hasJdText: Boolean(jdText),
         topK: DEFAULT_TOP_K,
       });
-      const response = await fetch(ANALYZE_ENDPOINT, {
-        method: "POST",
-        body: formData,
-      });
+      console.log("trigger the api ");
+      console.log(formData)
+      // const axiosResponse = await axios.post(ANALYZE_ENDPOINT, formData);
+      // console.log("axiosResponse:", axiosResponse);
 
-      const payload = await response.json();
-      if (!response.ok) {
-        const message = payload?.error || "Unable to analyze resume.";
-        throw new Error(message);
-      }
+      // const payload = axiosResponse.data;
+      // if (axiosResponse.status < 200 || axiosResponse.status >= 300) {
+      //   const message = payload?.error || "Unable to analyze resume.";
+      //   throw new Error(message);
+      // }
 
-      console.info("Analyze request succeeded", payload);
+      // console.info("Analyze request succeeded", payload);
       showToast("Analysis complete!", "success");
-      renderResults(payload);
+      // renderResults(payload);
     } catch (error) {
       console.error("Failed to analyze resume", error);
       showToast(error.message || "Failed to analyze resume.");
