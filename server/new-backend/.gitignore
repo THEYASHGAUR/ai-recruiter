@@ -1,0 +1,64 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+*.log
+
+# ---- Virtual Environment ----
+venv/
+env/
+ENV/
+.venv/
+
+# ---- OS Files ----
+.DS_Store
+Thumbs.db
+
+# ---- IDE Files ----
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# ---- Environment Variables ----
+*.env
+.env
+
+# ---- FastAPI / Temp Uploads ----
+uploads/
+tmp/
+*.sqlite3
+
+# ---- LangChain / Chroma data ----
+backend/data/chroma/
+chroma/
+*.db
+
+# ---- Node / Frontend optional ----
+node_modules/
+dist/
+build/
+
+# ---- Cache ----
+.cache/
+*.pickle
+*.pkl
+
+# ---- Jupyter ----
+.ipynb_checkpoints/
+
+# ---- Logs ----
+*.log
+logs/
+
+# ---- Backup Files ----
+*.bak
+*.old
+
+# ---- Python Bytecode ----
+*.pyc
+*.pyo
+*.pyd
