@@ -121,9 +121,14 @@ export default function ResumeAnalyzer() {
   };
 
   const parseAnalysis = (analysis: string | AnalysisResult): AnalysisResult => {
+    const stripCodeFence = (s: string) => {
+      return s.replace(/^```\s*json\s*/i, "").replace(/^```/, "").replace(/```\s*$/, "").trim();
+    };
+
     if (typeof analysis === "string") {
+      const cleaned = stripCodeFence(analysis);
       try {
-        return JSON.parse(analysis);
+        return JSON.parse(cleaned);
       } catch {
         return {};
       }
@@ -131,7 +136,85 @@ export default function ResumeAnalyzer() {
     return analysis;
   };
 
+  const parseJdSummary = (jd: string | object) => {
+    if (typeof jd !== "string") return jd;
+    const stripCodeFence = (s: string) => s.replace(/^```\s*json\s*/i, "").replace(/^```/, "").replace(/```\s*$/, "").trim();
+    const cleaned = stripCodeFence(jd);
+    try {
+      return JSON.parse(cleaned);
+    } catch {
+      return jd; // return original string if not parseable
+    }
+  };
+
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  const buildJdTextForCopy = (jd: any) => {
+    if (!jd) return "";
+    if (typeof jd === "string") return jd;
+
+    const lines: string[] = [];
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    const push = (label: string, value: any) => {
+      if (!value) return;
+      lines.push(`${label}: ${value}`);
+    };
+
+    push("Job Title", jd.job_title || jd.jobTitle || jd.title);
+    push("Company", jd.company);
+    push("Location", jd.location);
+    if (jd.company_description) {
+      lines.push("");
+      lines.push("Company Description:");
+      lines.push(jd.company_description);
+    }
+    if (jd.overview) {
+      lines.push("");
+      lines.push("Overview:");
+      lines.push(jd.overview);
+    }
+    if (jd.role_summary || jd.role_description) {
+      lines.push("");
+      lines.push("Role:");
+      lines.push(jd.role_summary || jd.role_description);
+    }
+    if (Array.isArray(jd.responsibilities) && jd.responsibilities.length) {
+      lines.push("");
+      lines.push("Responsibilities:");
+      jd.responsibilities.forEach((r: string) => lines.push(`- ${r}`));
+    }
+    const req = jd.requirements || {};
+    if (req.education || req.experience || Array.isArray(req.skills)) {
+      lines.push("");
+      lines.push("Requirements:");
+      if (req.education) lines.push(`- Education: ${req.education}`);
+      if (req.experience) lines.push(`- Experience: ${req.experience}`);
+      if (Array.isArray(req.skills) && req.skills.length) {
+        lines.push("- Skills:");
+        req.skills.forEach((s: string) => lines.push(`  - ${s}`));
+      }
+    }
+
+    if (Array.isArray(jd.must_haves) && jd.must_haves.length) {
+      lines.push("");
+      lines.push("Must Haves:");
+      jd.must_haves.forEach((m: string) => lines.push(`- ${m}`));
+    }
+    if (Array.isArray(jd.nice_to_haves) && jd.nice_to_haves.length) {
+      lines.push("");
+      lines.push("Nice To Haves:");
+      jd.nice_to_haves.forEach((n: string) => lines.push(`- ${n}`));
+    }
+    if (Array.isArray(jd.benefits) && jd.benefits.length) {
+      lines.push("");
+      lines.push("Benefits:");
+      jd.benefits.forEach((b: string) => lines.push(`- ${b}`));
+    }
+
+    return lines.join("\n");
+  };
+
   const analysis = results ? parseAnalysis(results.analysis) : null;
+  const jdSummaryParsed = results ? parseJdSummary(results.jd_summary) : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 px-4 py-12 md:py-20 relative overflow-hidden">
@@ -405,14 +488,106 @@ export default function ResumeAnalyzer() {
             </div>
 
             <div className="mb-5 p-5 bg-blue-50 rounded-xl border border-blue-100">
-              <h3 className="text-base font-semibold text-slate-900 mb-2.5">
-                JD Summary
-              </h3>
-              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-                {typeof results.jd_summary === "string"
-                  ? results.jd_summary
-                  : JSON.stringify(results.jd_summary, null, 2)}
-              </p>
+              <div className="flex items-start justify-between">
+                <h3 className="text-base font-semibold text-slate-900 mb-3">
+                  JD Summary
+                </h3>
+                <div className="ml-4">
+                  <button
+                    onClick={async () => {
+                      const textToCopy = buildJdTextForCopy(jdSummaryParsed ?? results?.jd_summary);
+                      try {
+                        await navigator.clipboard.writeText(textToCopy);
+                        showToast("JD summary copied to clipboard", "success");
+                      } catch {
+                        showToast("Failed to copy JD summary", "warn");
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              {typeof jdSummaryParsed === "string" ? (
+                <p className="text-sm text-slate-700 leading-relaxed">
+                  {jdSummaryParsed}
+                </p>
+              ) : (
+                (() => {
+                  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+                  const jd: any = jdSummaryParsed;
+                  return (
+                    <div className="space-y-4 text-sm text-slate-700">
+                      <div>
+                        <h4 className="text-lg font-semibold text-slate-900">
+                          {jd.job_title || jd.jobTitle || jd.title || "Job Title"}
+                        </h4>
+                        <p className="text-sm text-slate-600">
+                          {jd.company ? jd.company : ""}
+                          {jd.company && jd.location ? " • " : ""}
+                          {jd.location ? jd.location : ""}
+                        </p>
+                      </div>
+
+                      {jd.overview && (
+                        <p className="leading-relaxed">{jd.overview}</p>
+                      )}
+
+                      {jd.role_description && (
+                        <div>
+                          <h5 className="font-medium text-slate-900 mb-1">Role</h5>
+                          <p className="leading-relaxed">{jd.role_description}</p>
+                        </div>
+                      )}
+
+                      {Array.isArray(jd.responsibilities) && jd.responsibilities.length > 0 && (
+                        <div>
+                          <h5 className="font-medium text-slate-900 mb-2">Responsibilities</h5>
+                          <ul className="space-y-2">
+                            {jd.responsibilities.map((item: string, i: number) => (
+                              <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                                <span className="text-blue-600 mt-0.5 text-xs">●</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {jd.requirements && (
+                        <div>
+                          <h5 className="font-medium text-slate-900 mb-2">Requirements</h5>
+                          <div className="text-sm text-slate-700 space-y-1">
+                            {jd.requirements.education && (
+                              <div>
+                                <strong className="text-slate-900">Education:</strong> {jd.requirements.education}
+                              </div>
+                            )}
+
+                            {jd.requirements.experience && (
+                              <div>
+                                <strong className="text-slate-900">Experience:</strong> {jd.requirements.experience}
+                              </div>
+                            )}
+
+                            {Array.isArray(jd.requirements.skills) && jd.requirements.skills.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {jd.requirements.skills.map((s: string, i: number) => (
+                                  <span key={i} className="px-2 py-1 bg-white border border-slate-200 rounded-full text-xs text-slate-700">
+                                    {s}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()
+              )}
             </div>
 
             <details className="bg-slate-50 p-4 rounded-xl border border-slate-200">

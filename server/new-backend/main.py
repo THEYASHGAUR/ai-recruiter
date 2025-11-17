@@ -12,11 +12,21 @@ from langchain_rag import (
     analyze_resume,
 )
 from file_utils import save_upload_file
+from fastapi.middleware.cors import CORSMiddleware
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = FastAPI(title="Resume Analyzer (no vectorstore)")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Or ["http://localhost:3000"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 logging.basicConfig(
     level=logging.INFO,
