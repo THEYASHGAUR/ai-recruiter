@@ -11,6 +11,7 @@ from langchain_rag import (
     generate_jd_summary,
     analyze_resume,
 )
+from langchain_interview_questions import fetch_interview_insights_from_web
 from file_utils import save_upload_file
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -34,12 +35,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger("resume_analyzer")
 
+
 @app.post("/analyze")
 async def analyze(
     resume: UploadFile,
     jd: UploadFile = None,
     jd_text: str = Form(None),
-    top_k: int = Form(5)
+    top_k: int = Form(5),
 ):
     logger.info(
         "Received /analyze request | resume=%s | jd_upload=%s | jd_text_supplied=%s | top_k=%s",
@@ -67,7 +69,9 @@ async def analyze(
         else:
             if not jd_text:
                 logger.warning("JD text missing and no JD file uploaded")
-                return JSONResponse({"error": "Provide jd file or jd_text"}, status_code=400)
+                return JSONResponse(
+                    {"error": "Provide jd file or jd_text"}, status_code=400
+                )
             full_jd = jd_text
             logger.info("JD text supplied via form")
 
@@ -76,15 +80,17 @@ async def analyze(
         logger.info("JD summary generated (%s chars)", jd_summary)
 
         # 5. create embeddings for resume chunks and the JD (in-memory)
-        chunk_embs = embed_text_list(resume_chunks)       # list of vectors
-        jd_emb = embed_text(full_jd)                      # single vector
+        chunk_embs = embed_text_list(resume_chunks)  # list of vectors
+        jd_emb = embed_text(full_jd)  # single vector
         logger.info("Computed embeddings for resume chunks and JD")
 
         # 6. simple similarity to pick top-k relevant resume chunks
         topk_indices = top_k_similar(jd_emb, chunk_embs, k=top_k)
         selected_chunks = [resume_chunks[i] for i in topk_indices]
         joined_chunks = "\n\n---\n\n".join(selected_chunks)
-        logger.info("Selected top %s resume chunks: %s", len(selected_chunks), topk_indices)
+        logger.info(
+            "Selected top %s resume chunks: %s", len(selected_chunks), topk_indices
+        )
 
         # 7. call LLM to analyze using selected chunks + JD summary + full JD
         analysis = analyze_resume(joined_chunks, jd_summary, full_jd)
@@ -94,7 +100,7 @@ async def analyze(
             "jd_summary": jd_summary,
             "selected_chunks_count": len(selected_chunks),
             "selected_chunks_indices": topk_indices,
-            "analysis": analysis
+            "analysis": analysis,
         }
     except Exception as exc:
         logger.exception("/analyze request failed: %s", exc)
@@ -104,6 +110,29 @@ async def analyze(
         )
 
 
+@app.post("/interview-questions")
+async def interview_questions(jd_text: str = Form(...)):
+    """
+    Input: JD text from frontend
+    Output: Interview questions, experiences, number of rounds
+    """
+    logger.info("Received /interview-questions request")
+
+    try:
+        result = fetch_interview_insights_from_web(jd_text)
+        logger.info("Interview insights fetched successfully")
+
+        return {"success": True, "insights": result}
+
+    except Exception as exc:
+        logger.exception("/interview-questions failed: %s", exc)
+        return JSONResponse(
+            {"success": False, "error": str(exc)},
+            status_code=500,
+        )
+
+
+# root endpoint
 @app.get("/")
 def root():
-    return {"message":"fastapi server is running...."}
+    return {"message": "fastapi server is running...."}
