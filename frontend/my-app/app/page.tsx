@@ -125,23 +125,71 @@ export default function ResumeAnalyzer() {
       return s.replace(/^```\s*json\s*/i, "").replace(/^```/, "").replace(/```\s*$/, "").trim();
     };
 
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    const normalize = (obj: any): AnalysisResult => {
+      if (!obj || typeof obj !== "object") return {};
+      const out: AnalysisResult = {};
+      out.match_score = ((obj.match_score ?? obj.matchScore ?? obj.match) || obj.score);
+      // summary may be under several keys (summary or an advice question)
+      out.summary = obj.summary ?? obj.description ?? obj['Should u apply in this Job?'] ?? obj['should_u_apply'] ?? obj['should_apply'];
+      // ensure arrays
+      out.strengths = Array.isArray(obj.strengths) ? obj.strengths : (obj.strengths ? [String(obj.strengths)] : []);
+      out.missing_skills = Array.isArray(obj.missing_skills)
+        ? obj.missing_skills
+        : (obj.missingSkills ? obj.missingSkills : (obj.missing_skills ? [String(obj.missing_skills)] : []));
+      return out;
+    };
+
     if (typeof analysis === "string") {
       const cleaned = stripCodeFence(analysis);
       try {
-        return JSON.parse(cleaned);
+        const parsed = JSON.parse(cleaned);
+        return normalize(parsed);
       } catch {
         return {};
       }
     }
-    return analysis;
+    return normalize(analysis as AnalysisResult);
   };
 
   const parseJdSummary = (jd: string | object) => {
-    if (typeof jd !== "string") return jd;
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    const normalizeJd = (obj: any) => {
+      if (!obj || typeof obj !== "object") return obj;
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+      const out: any = {};
+      out.job_title = obj.job_title || obj.jobTitle || obj.title || obj.jobTitle_raw || obj['job title'] || obj.job || null;
+      out.company = obj.company || obj.company_name || obj.employer || null;
+      out.location = obj.location || obj.city || obj.location_raw || null;
+      out.company_description = obj.company_description || obj.company_description || obj.company_overview || obj.company_summary || null;
+      out.overview = obj.overview || obj.description || obj.summary || null;
+      out.role_summary = obj.role_summary || obj.role_description || obj.role || null;
+      out.responsibilities = obj.responsibilities || obj.responsibility || obj.resp || [];
+
+      // Normalize requirements nested object
+      const req = obj.requirements || obj.requirement || obj.requirement_details || {};
+      out.requirements = {};
+      out.requirements.education = req.education || req.education_required || req.education_required || req['education_required'] || req.education_required || req.education_required || null;
+      out.requirements.experience = req.experience || req.experience_required || req['experience_required'] || req.years || null;
+      out.requirements.skills = req.skills || req.skills_required || req.skills_required || req.skills_required || req.skills_required || req.skills_required || [];
+
+      out.must_haves = obj.must_haves || obj.mustHaves || obj.mandatory || [];
+      out.nice_to_haves = obj.nice_to_haves || obj.niceToHaves || obj.preferred || [];
+      out.benefits = obj.benefits || obj.package_offering || obj.benefits_offered || [];
+      return out;
+    };
+
+    if (typeof jd !== "string") {
+      // already an object, normalize and return
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+      return normalizeJd(jd as any);
+    }
+
     const stripCodeFence = (s: string) => s.replace(/^```\s*json\s*/i, "").replace(/^```/, "").replace(/```\s*$/, "").trim();
-    const cleaned = stripCodeFence(jd);
+    const cleaned = stripCodeFence(jd as string);
     try {
-      return JSON.parse(cleaned);
+      const parsed = JSON.parse(cleaned);
+      return normalizeJd(parsed);
     } catch {
       return jd; // return original string if not parseable
     }
@@ -435,7 +483,7 @@ export default function ResumeAnalyzer() {
 
             <div className="mb-6 p-5 bg-slate-50 rounded-xl border border-slate-200">
               <h3 className="text-base font-semibold text-slate-900 mb-2.5">
-                Summary
+                Should u apply for this job?
               </h3>
               <p className="text-sm text-slate-700 leading-relaxed">
                 {analysis?.summary || "No summary returned."}
@@ -444,7 +492,7 @@ export default function ResumeAnalyzer() {
 
             <div className="grid md:grid-cols-2 gap-5 mb-6">
               <div className="p-5 bg-emerald-50 rounded-xl border border-emerald-100">
-                <h3 className="text-base font-semibold text-slate-900 mb-3">
+                <h3 className="text-2xl font-stretch-50% text-slate-900 mb-3">
                   Strengths
                 </h3>
                 <ul className="space-y-2">
@@ -466,7 +514,7 @@ export default function ResumeAnalyzer() {
                 </ul>
               </div>
               <div className="p-5 bg-amber-50 rounded-xl border border-amber-100">
-                <h3 className="text-base font-semibold text-slate-900 mb-3">
+                <h3 className="text-2xl font-stretch-50% text-slate-900 mb-3">
                   Gaps / Missing Skills
                 </h3>
                 <ul className="space-y-2">
@@ -489,7 +537,7 @@ export default function ResumeAnalyzer() {
 
             <div className="mb-5 p-5 bg-blue-50 rounded-xl border border-blue-100">
               <div className="flex items-start justify-between">
-                <h3 className="text-base font-semibold text-slate-900 mb-3">
+                <h3 className="text-2xl font-stretch-50% text-slate-900 mb-3">
                   JD Summary
                 </h3>
                 <div className="ml-4">
@@ -535,10 +583,10 @@ export default function ResumeAnalyzer() {
                         <p className="leading-relaxed">{jd.overview}</p>
                       )}
 
-                      {jd.role_description && (
+                      {(jd.role_summary || jd.role_description) && (
                         <div>
                           <h5 className="font-medium text-slate-900 mb-1">Role</h5>
-                          <p className="leading-relaxed">{jd.role_description}</p>
+                          <p className="leading-relaxed">{jd.role_summary || jd.role_description}</p>
                         </div>
                       )}
 
@@ -562,13 +610,23 @@ export default function ResumeAnalyzer() {
                           <div className="text-sm text-slate-700 space-y-1">
                             {jd.requirements.education && (
                               <div>
-                                <strong className="text-slate-900">Education:</strong> {jd.requirements.education}
+                                <strong className="text-slate-900">Education Required:</strong> {jd.requirements.education}
                               </div>
                             )}
 
                             {jd.requirements.experience && (
                               <div>
-                                <strong className="text-slate-900">Experience:</strong> {jd.requirements.experience}
+                                <strong className="text-slate-900">Experience Required:</strong> {jd.requirements.experience}
+                              </div>
+                            )}
+                            {jd.requirements.experience && (
+                              <div>
+                                <strong className="text-slate-900">Skills Required:</strong> {jd.requirements.skills_required}
+                              </div>
+                            )}
+                            {jd.package_offering && (
+                              <div>
+                                <strong className="text-slate-900">Package Offering:</strong> {jd.package_offering}
                               </div>
                             )}
 
