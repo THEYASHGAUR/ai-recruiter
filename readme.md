@@ -1,4 +1,4 @@
-resume analyser
+resume analyser + ai interview questions Agent
 
 frontend - html,css,js
 backend - fastapi , langchain
