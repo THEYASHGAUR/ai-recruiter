@@ -1,8 +1,11 @@
 resume analyser + ai interview questions Agent
 
-frontend - html,css,js
+frontend - html,css,js 
+-
 backend - fastapi , langchain
+-
 vector database = chromaDB
+-
 
 
 FEATURE 1 
@@ -12,3 +15,7 @@ FEATURE 2
 - get past interview questions and interview experiences from other candidates scrapped from the web.
 - get insider tips for better chances of selection.
 - using tavily search for extracting into from the web.
+
+
+FEATURE 3 
+- coming soon.....
