@@ -136,3 +136,16 @@ async def interview_questions(jd_text: str = Form(...)):
 @app.get("/")
 def root():
     return {"message": "fastapi server is running...."}
+
+if __name__ == "__main__":
+    import uvicorn
+    import os
+
+    port = int(os.environ.get("PORT", 8000))
+
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=port,
+        reload=False
+    )
