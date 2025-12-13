@@ -33,7 +33,7 @@ export default function ResumeAnalyzer() {
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  const ANALYZE_ENDPOINT = "http://127.0.0.1:8000/analyze";
+  const ANALYZE_ENDPOINT = "https://ai-recruiterr.onrender.com/analyze";
   const DEFAULT_TOP_K = 5;
 
   const showToast = (message: string, type: "warn" | "success" = "warn") => {
