@@ -1,6 +1,5 @@
 "use client";
 
-import Header from "@/components/header";
 import { useState } from "react";
 
 export default function InterviewInsights() {
@@ -61,7 +60,6 @@ export default function InterviewInsights() {
 
   return (
     <>
-      <Header />
 
       <div className="min-h-screen bg-linear-to-br from-gray-50 via-slate-50 to-gray-100 px-4 py-16 md:py-24 relative overflow-hidden">
 

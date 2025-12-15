@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, FormEvent, DragEvent, KeyboardEvent } from "react";
-import Header from "../components/header";
 
 interface AnalysisResult {
   match_score?: string;
@@ -327,7 +326,6 @@ export default function ResumeAnalyzer() {
 
   return (
     <>
-    <Header />
       <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50/30 to-slate-100 px-4 py-12 md:py-20 relative overflow-hidden">
         {/* Subtle Background Effects */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.03),transparent_50%)] pointer-events-none" />
